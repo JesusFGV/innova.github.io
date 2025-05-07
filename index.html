@@ -13,13 +13,20 @@
       padding: 20px;
     }
 
+    h1 {
+      color: #5e4b8b;
+    }
+
     .color-buttons {
       margin: 10px 0;
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
     }
 
     .color-button {
-      width: 30px;
-      height: 30px;
+      width: 40px;
+      height: 40px;
       border: 2px solid #000;
       margin: 5px;
       cursor: pointer;
@@ -31,6 +38,8 @@
       background: white;
       margin-top: 10px;
       touch-action: none;
+      max-width: 100%;
+      height: auto;
     }
 
     #analizar {
@@ -51,13 +60,15 @@
       border-radius: 10px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
       text-align: left;
-      max-width: 800px;
+      max-width: 600px;
       margin-left: auto;
       margin-right: auto;
     }
   </style>
 </head>
 <body>
+  <h1>Dibujo Psicológico Infantil</h1>
+  <p>Selecciona un color y dibuja. Luego analiza los resultados.</p>
   <div class="color-buttons">
     <button class="color-button" style="background-color: red" data-color="Rojo"></button>
     <button class="color-button" style="background-color: blue" data-color="Azul"></button>
@@ -66,13 +77,13 @@
     <button class="color-button" style="background-color: purple" data-color="Morado"></button>
     <button class="color-button" style="background-color: orange" data-color="Naranja"></button>
     <button class="color-button" style="background-color: pink" data-color="Rosa"></button>
-    <button class="color-button" style="background-color: skyblue" data-color="Celest"></button>
+    <button class="color-button" style="background-color: skyblue" data-color="Celeste"></button>
     <button class="color-button" style="background-color: saddlebrown" data-color="Marrón"></button>
     <button class="color-button" style="background-color: gray" data-color="Gris"></button>
     <button class="color-button" style="background-color: black" data-color="Negro"></button>
     <button class="color-button" style="background-color: white" data-color="Blanco"></button>
   </div>
-  <canvas id="canvas" width="500" height="400"></canvas>
+  <canvas id="canvas"></canvas>
   <br>
   <button id="analizar">Analizar dibujo</button>
   <div id="resultado"></div>
@@ -83,6 +94,10 @@
     const resultado = document.getElementById('resultado');
     let painting = false;
     let colorActual = 'Rojo';
+
+    // Set canvas size to fit the screen
+    canvas.width = window.innerWidth * 0.9; // 90% of the screen width
+    canvas.height = window.innerHeight * 0.6; // 60% of the screen height
 
     const coloresRGB = {
       Rojo: [255, 0, 0],
@@ -106,32 +121,40 @@
       });
     });
 
-    function getMousePos(canvas, evt) {
-      const rect = canvas.getBoundingClientRect();
-      return {
-        x: evt.clientX - rect.left,
-        y: evt.clientY - rect.top
-      };
+    // Event listeners for mouse and touch events
+    function startPosition(e) {
+      painting = true;
+      const pos = getPos(e);
+      ctx.beginPath();
+      ctx.moveTo(pos.x, pos.y);
     }
 
-    canvas.addEventListener('mousedown', e => {
-      painting = true;
-      ctx.beginPath();
-      const pos = getMousePos(canvas, e);
-      ctx.moveTo(pos.x, pos.y);
-    });
+    function endPosition() {
+      painting = false;
+    }
 
-    canvas.addEventListener('mousemove', e => {
-      if (painting) {
-        const pos = getMousePos(canvas, e);
-        ctx.lineTo(pos.x, pos.y);
-        ctx.stroke();
-      }
-    });
+    function draw(e) {
+      if (!painting) return;
+      const pos = getPos(e);
+      ctx.lineTo(pos.x, pos.y);
+      ctx.stroke();
+    }
 
-    canvas.addEventListener('mouseup', () => painting = false);
-    canvas.addEventListener('mouseout', () => painting = false);
+    function getPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX || e.touches[0].clientX;
+      const y = e.clientY || e.touches[0].clientY;
+      return { x: x - rect.left, y: y - rect.top };
+    }
 
+    canvas.addEventListener('mousedown', startPosition);
+    canvas.addEventListener('mouseup', endPosition);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('touchstart', startPosition);
+    canvas.addEventListener('touchend', endPosition);
+    canvas.addEventListener('touchmove', draw);
+
+    // Analyze the drawing
     document.getElementById('analizar').addEventListener('click', () => {
       const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const counts = {};
@@ -163,6 +186,7 @@
       analizarPsicologicamente(porcentajes);
     });
 
+    // Psicological analysis based on colors
     function analizarPsicologicamente(porcentajes) {
       let mensaje = `<h3>Interpretación Psicológica del Dibujo</h3><ul>`;
       for (const color in porcentajes) {
