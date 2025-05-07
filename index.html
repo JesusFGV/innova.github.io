@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dibujo Psicológico Infantil</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #f5f5fa;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .color-buttons {
+      margin: 10px 0;
+    }
+
+    .color-button {
+      width: 30px;
+      height: 30px;
+      border: 2px solid #000;
+      margin: 5px;
+      cursor: pointer;
+      border-radius: 50%;
+    }
+
+    canvas {
+      border: 2px solid #333;
+      background: white;
+      margin-top: 10px;
+      touch-action: none;
+    }
+
+    #analizar {
+      margin-top: 15px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #5e4b8b;
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 8px;
+    }
+
+    #resultado {
+      margin-top: 20px;
+      padding: 15px;
+      background: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      text-align: left;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="color-buttons">
+    <button class="color-button" style="background-color: red" data-color="Rojo"></button>
+    <button class="color-button" style="background-color: blue" data-color="Azul"></button>
+    <button class="color-button" style="background-color: green" data-color="Verde"></button>
+    <button class="color-button" style="background-color: yellow" data-color="Amarillo"></button>
+    <button class="color-button" style="background-color: purple" data-color="Morado"></button>
+    <button class="color-button" style="background-color: orange" data-color="Naranja"></button>
+    <button class="color-button" style="background-color: pink" data-color="Rosa"></button>
+    <button class="color-button" style="background-color: skyblue" data-color="Celest"></button>
+    <button class="color-button" style="background-color: saddlebrown" data-color="Marrón"></button>
+    <button class="color-button" style="background-color: gray" data-color="Gris"></button>
+    <button class="color-button" style="background-color: black" data-color="Negro"></button>
+    <button class="color-button" style="background-color: white" data-color="Blanco"></button>
+  </div>
+  <canvas id="canvas" width="500" height="400"></canvas>
+  <br>
+  <button id="analizar">Analizar dibujo</button>
+  <div id="resultado"></div>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const resultado = document.getElementById('resultado');
+    let painting = false;
+    let colorActual = 'Rojo';
+
+    const coloresRGB = {
+      Rojo: [255, 0, 0],
+      Azul: [0, 0, 255],
+      Verde: [0, 128, 0],
+      Amarillo: [255, 255, 0],
+      Morado: [128, 0, 128],
+      Naranja: [255, 165, 0],
+      Rosa: [255, 192, 203],
+      Celeste: [135, 206, 235],
+      Marrón: [139, 69, 19],
+      Gris: [128, 128, 128],
+      Negro: [0, 0, 0],
+      Blanco: [255, 255, 255],
+    };
+
+    document.querySelectorAll('.color-button').forEach(button => {
+      button.addEventListener('click', () => {
+        colorActual = button.dataset.color;
+        ctx.strokeStyle = button.style.backgroundColor;
+      });
+    });
+
+    function getMousePos(canvas, evt) {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: evt.clientX - rect.left,
+        y: evt.clientY - rect.top
+      };
+    }
+
+    canvas.addEventListener('mousedown', e => {
+      painting = true;
+      ctx.beginPath();
+      const pos = getMousePos(canvas, e);
+      ctx.moveTo(pos.x, pos.y);
+    });
+
+    canvas.addEventListener('mousemove', e => {
+      if (painting) {
+        const pos = getMousePos(canvas, e);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+      }
+    });
+
+    canvas.addEventListener('mouseup', () => painting = false);
+    canvas.addEventListener('mouseout', () => painting = false);
+
+    document.getElementById('analizar').addEventListener('click', () => {
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const counts = {};
+      let total = 0;
+
+      for (let i = 0; i < imgData.data.length; i += 4) {
+        const r = imgData.data[i];
+        const g = imgData.data[i + 1];
+        const b = imgData.data[i + 2];
+        const a = imgData.data[i + 3];
+        if (a === 0) continue;
+
+        for (const color in coloresRGB) {
+          const [cr, cg, cb] = coloresRGB[color];
+          const diff = Math.abs(r - cr) + Math.abs(g - cg) + Math.abs(b - cb);
+          if (diff < 60) {
+            counts[color] = (counts[color] || 0) + 1;
+            total++;
+            break;
+          }
+        }
+      }
+
+      const porcentajes = {};
+      for (const color in counts) {
+        porcentajes[color] = (counts[color] / total) * 100;
+      }
+
+      analizarPsicologicamente(porcentajes);
+    });
+
+    function analizarPsicologicamente(porcentajes) {
+      let mensaje = `<h3>Interpretación Psicológica del Dibujo</h3><ul>`;
+      for (const color in porcentajes) {
+        const porcentaje = porcentajes[color];
+        switch (color) {
+          case "Rojo":
+            mensaje += `<li>Uso del <b>Rojo</b>: indica energía, pasión o enojo (${porcentaje.toFixed(2)}%).</li>`;
+            break;
+          case "Azul":
+            mensaje += `<li>Uso del <b>Azul</b>: refleja tranquilidad, seguridad o tristeza (${porcentaje.toFixed(2)}%).</li>`;
+            break;
+          case "Verde":
+            mensaje += `<li>Uso del <b>Verde</b>: representa naturaleza, calma o esperanza (${porcentaje.toFixed(2)}%).</li>`;
+            break;
+          case "Amarillo":
+            mensaje += `<li>Uso del <b>Amarillo</b>: sugiere alegría, optimismo o atención (${porcentaje.toFixed(2)}%).</li>`;
+            break;
+          case "Morado":
+            mensaje += `<li>Uso del <b>Morado</b>: puede representar imaginación o deseo de protección (${porcentaje.toFixed(2)}%).</li>`;
+            break;
+          case "Naranja":
+            mensaje += `<li>Uso del <b>Naranja</b>: representa entusiasmo, creatividad o sociabilidad (${porcentaje.toFixed(2)}%).</li>`;
+            break;
+          case "Rosa":
+            mensaje += `<li>Uso del <b>Rosa</b>: puede reflejar ternura, afecto o necesidad de cariño (${porcentaje.toFixed(2)}%).</li>`;
+            break;
+          case "Celeste":
+            mensaje += `<li>Uso del <b>Celeste</b>: sugiere paz, dulzura o inocencia (${porcentaje.toFixed(2)}%).</li>`;
+            break;
+          case "Marrón":
+            mensaje += `<li>Uso del <b>Marrón</b>: indica deseo de estabilidad o conexión con lo familiar (${porcentaje.toFixed(2)}%).</li>`;
+            break;
+          case "Gris":
+            mensaje += `<li>Uso del <b>Gris</b>: puede señalar emociones neutras o confusión (${porcentaje.toFixed(2)}%).</li>`;
+            break;
+          case "Negro":
+            mensaje += `<li>Uso del <b>Negro</b>: puede reflejar miedo, tristeza o deseos de protegerse (${porcentaje.toFixed(2)}%).</li>`;
+            break;
+          case "Blanco":
+            mensaje += `<li>Uso del <b>Blanco</b>: representa pureza, orden o incluso vacío (${porcentaje.toFixed(2)}%).</li>`;
+            break;
+        }
+      }
+      mensaje += "</ul>";
+      resultado.innerHTML = mensaje;
+    }
+  </script>
+</body>
+</html>
